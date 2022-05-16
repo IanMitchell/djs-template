@@ -1,5 +1,5 @@
 import { collectDefaultMetrics, Gauge } from "prom-client";
-import { getTotalGuildCount, getTotalMemberCount } from "~/lib/metrics/discord";
+import { getTotalGuildCount, getTotalMemberCount } from "./discord";
 
 collectDefaultMetrics({
 	prefix: "app_name",

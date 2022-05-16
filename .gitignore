@@ -4,4 +4,12 @@ node_modules
 dist
 .env
 .turbo
-apps/dashboard/tailwind.css
+
+# Remix
+apps/dashboard/.cache
+apps/dashboard/.vercel
+apps/dashboard/.output
+apps/dashboard/build/
+apps/dashboard/public/build
+apps/dashboard/api/index.js
+apps/dashboard/app/tailwind.css

@@ -1,9 +1,10 @@
-import "dotenv/config";
-import Sentry from "./src/lib/sentry";
-import getLogger from "./src/lib/logging/logger";
-import { getException } from "./src/lib/error";
+import dotenv from "dotenv";
+import Sentry from "./src/lib/core/logging/sentry";
+import getLogger from "./src/lib/core/logging/logger";
+import { getException } from "./src/lib/core/node/error";
 
-const log = getLogger("Host");
+dotenv.config({ path: "../../../.env" });
+const log = getLogger("host");
 
 async function initialize() {
 	try {

@@ -1,4 +1,4 @@
-import { CommandArgs } from "~/typedefs";
+import { CommandArgs } from "../typedefs";
 
 export default async ({ bot }: CommandArgs) => {
 	// TODO: impl

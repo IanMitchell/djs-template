@@ -1,6 +1,8 @@
+import type { RESTPostAPIApplicationCommandsJSONBody } from "discord-api-types/v10";
 import path from "node:path";
 import fs from "node:fs";
 import {
+	AutocompleteInteraction,
 	Client,
 	CommandInteraction,
 	Interaction,
@@ -8,31 +10,47 @@ import {
 	MessageComponentInteraction,
 	MessageSelectMenu,
 } from "discord.js";
-import { getDirname } from "~/lib/files";
+import { getDirname } from "./lib/core/node/files";
 import {
 	ActionHandler,
 	BotCommand,
 	BotComponent,
+	CommandBuilderDefinition,
 	CommandModule,
-} from "~/typedefs";
-import database from "~/lib/database";
-import getLogger, { getInteractionMeta } from "~/lib/logging";
-import Sentry from "~/lib/sentry";
+} from "./typedefs";
+import database from "./lib/core/database";
+import getLogger, { getInteractionMeta } from "./lib/core/logging";
+import Sentry from "./lib/core/logging/sentry";
 import { SlashCommandBuilder } from "@discordjs/builders";
 import {
 	getMergedApplicationCommandData,
 	getSerializedCommandInteractionKey,
 	getSlashCommandKey,
-} from "~/lib/commands";
+} from "./lib/core/commands";
 import chalk from "chalk";
 import type { PrismaClient } from "@prisma/client";
-import { getException } from "~/lib/error";
+import { getException } from "./lib/core/node/error";
+import { Counter } from "prom-client";
 
-const log = getLogger("Bot");
+const log = getLogger("bot");
+
+const interactionCounter = new Counter({
+	name: "interaction_total",
+	help: "Total Interactions handled",
+});
 
 export class Application extends Client {
 	public readonly database: PrismaClient;
-	public readonly applicationCommands: Map<string, BotCommand>;
+	public readonly applicationCommands: Map<
+		string,
+		BotCommand<CommandInteraction>
+	>;
+
+	public readonly autocompleteHandlers: Map<
+		string,
+		BotCommand<AutocompleteInteraction>
+	>;
+
 	public readonly messageComponents: Map<string, BotComponent>;
 
 	constructor() {
@@ -44,6 +62,7 @@ export class Application extends Client {
 
 		this.database = database;
 		this.applicationCommands = new Map();
+		this.autocompleteHandlers = new Map();
 		this.messageComponents = new Map();
 
 		log.info("Loading Application Commands");
@@ -54,6 +73,9 @@ export class Application extends Client {
 
 		this.on("ready", this.initialize);
 		this.on("interactionCreate", this.handleInteraction);
+		this.on("interactionCreate", () => {
+			interactionCounter.inc();
+		});
 		this.on("error", (error) => {
 			log.fatal(error.message);
 			Sentry.captureException(error);
@@ -99,7 +121,7 @@ export class Application extends Client {
 		}
 	}
 
-	getSerializedApplicationData() {
+	getSerializedApplicationData(): RESTPostAPIApplicationCommandsJSONBody[] {
 		const commands = new Map<string, SlashCommandBuilder>();
 
 		Array.from(this.applicationCommands.values()).forEach((entry) => {
@@ -173,16 +195,41 @@ export class Application extends Client {
 				log.error(error.message, getInteractionMeta(interaction));
 				Sentry.captureException(error);
 			}
-		}
+		} else if (interaction.isAutocomplete()) {
+			const key = getSerializedCommandInteractionKey(interaction);
 
-		// TODO: Handle Autocomplete
+			if (this.autocompleteHandlers.has(key)) {
+				try {
+					this.autocompleteHandlers.get(key)?.handler(interaction);
+				} catch (err: unknown) {
+					const error = getException(err);
+					log.error(error.message, getInteractionMeta(interaction));
+					Sentry.captureException(error);
+				}
+			} else {
+				log.error(
+					`Unknown autocomplete interaction: ${key}`,
+					getInteractionMeta(interaction)
+				);
+			}
+		}
 	}
 
 	onApplicationCommand(
-		command: SlashCommandBuilder | SlashCommandBuilder[],
+		command: CommandBuilderDefinition,
 		handler: ActionHandler<CommandInteraction>
 	) {
 		this.applicationCommands.set(getSlashCommandKey(command), {
+			commands: Array.isArray(command) ? command : [command],
+			handler,
+		});
+	}
+
+	onAutocomplete(
+		command: CommandBuilderDefinition,
+		handler: ActionHandler<AutocompleteInteraction>
+	) {
+		this.autocompleteHandlers.set(getSlashCommandKey(command), {
 			commands: Array.isArray(command) ? command : [command],
 			handler,
 		});

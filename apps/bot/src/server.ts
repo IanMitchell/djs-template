@@ -1,34 +1,16 @@
 import fastify from "fastify";
-import { register } from "~/lib/metrics/grafana";
-import cors from "fastify-cors";
-import bot from "~/bot";
-import getLogger from "~/lib/logging";
-import { createShield } from "./lib/metrics/shields";
-import { getTotalGuildCount, getTotalMemberCount } from "~/lib/metrics/discord";
-import { getException } from "~/lib/error";
+import { register } from "./lib/core/metrics/grafana";
+import cors from "@fastify/cors";
+import getLogger from "./lib/core/logging";
+import { getException } from "./lib/core/node/error";
+import shieldRoutes from "./routes/shield-routes";
 
 const server = fastify();
 void server.register(cors);
 
-const log = getLogger("Server");
+const log = getLogger("server");
 
-server.get("/shield/guilds", async (request, response) => {
-	log.info("Shield: Guilds");
-	const value = await getTotalGuildCount();
-	return response.send(createShield("Guilds", value.toLocaleString()));
-});
-
-server.get("/shield/users", async (request, response) => {
-	log.info("Shield: Users");
-	const value = await getTotalMemberCount();
-	return response.send(createShield("Users", value.toLocaleString()));
-});
-
-server.get("/shield/commands", async (request, response) =>
-	response.send(
-		createShield("Commands", bot.applicationCommands.size.toLocaleString())
-	)
-);
+void server.register(shieldRoutes);
 
 server.get("/metrics", async (request, response) => {
 	try {

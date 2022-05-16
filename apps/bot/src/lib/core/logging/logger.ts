@@ -13,14 +13,14 @@ type Logger = {
 	fatal: LogFn;
 };
 
-const logger = logdna.createLogger(process.env.LOGDNA_KEY!, {
-	app: "aquarius",
-	level: "info",
-	indexMeta: true,
-});
+// const logger = logdna.createLogger(process.env.LOGDNA_KEY!, {
+// 	app: "aquarius",
+// 	level: "info",
+// 	indexMeta: true,
+// });
 
 if (process.env.NODE_ENV === "production") {
-	logger.info?.("Creating connection to LogDNA");
+	// logger.info?.("Creating connection to LogDNA");
 }
 
 // async function shutdown() {
@@ -34,7 +34,8 @@ if (process.env.NODE_ENV === "production") {
 // process.on("SIGINT", async () => shutdown());
 
 function logLine(message: string, options: logdna.LogOptions) {
-	logger.log(message, options);
+	// logger.log(message, options);
+	console.log({ message, options });
 }
 
 export default function getLogger(name: string): Logger {

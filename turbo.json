@@ -11,13 +11,15 @@
 		"db:deploy": {},
 		"build": {
 			"dependsOn": ["^build"],
-			"outputs": ["dist/**", ".next/**"]
+			"outputs": ["apps/*/dist/**"]
 		},
 		"typecheck": {
 			"dependsOn": ["build"]
 		},
 		"prettier": {},
-		"lint": {},
+		"lint": {
+			"dependsOn": ["build"]
+		},
 		"test": {
 			"dependsOn": ["build"]
 		}
