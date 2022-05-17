@@ -11,7 +11,7 @@ import {
 
 export function getSlashCommandKey(definition: CommandBuilderDefinition) {
 	if (Array.isArray(definition)) {
-		return definition.map((component) => component.name).join("-");
+		return definition.map((component) => component.name).join(".");
 	}
 
 	return definition.name;
@@ -24,7 +24,7 @@ export function getSerializedCommandInteractionKey(
 	const group = interaction.options.getSubcommandGroup(false);
 	const subcommand = interaction.options.getSubcommand(false);
 
-	return [name, group, subcommand].filter((value) => Boolean(value)).join("-");
+	return [name, group, subcommand].filter((value) => Boolean(value)).join(".");
 }
 
 export function getMergedApplicationCommandData(
